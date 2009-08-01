@@ -1,13 +1,23 @@
 local announces = {
-	['Ritual of Souls'] = 'Click the portal for free candy!',
-	['Ritual of Summoning'] = 'Summoning <target>',
+	['Guardian Spirit'] =  {
+		'Guardian Spirit on <target>',
+		['channels'] = { 'RAID', 8 }
+	},
+	['Hymn of Hope'] = {
+		'<-- Hymn of Hope -->',
+		['channels'] = { 'RAID' }
+	},
+	['Pain Suppression'] = {
+		'Pain Suppression on <target>',
+		['channels'] = { 8, 'RAID' }
+	},
 }
 
 local tags = {
 	['target'] = function()
 		local name = UnitName'target'
 
-		return name or '<no target>'
+		return name or 'Nifty'
 	end,
 }
 
@@ -18,28 +28,21 @@ local handleTag = function(tag)
 	end
 end
 
-local smartSend = function(msg)
-	if(not msg) then return end
-
-	msg = msg:gsub('<(%w+)>', handleTag)
-
-	local dest
-	local inInstance, instanceType = IsInInstance()
-	if(instanceType == 'pvp') then
-		dest = 'BATTLEGROUND'
-	elseif(GetNumRaidMembers() > 0) then
-		dest = 'RAID'
-	elseif(GetNumPartyMembers() > 0) then
-		dest = 'PARTY'
-	else
-		-- Drop out if we aren't in a group.
-		return
+local smartSend = function(spell)
+	if(not spell) then return end
+	if GetNumRaidMembers > 0 do 
+		msg = spell[1]:gsub('<(%w+)>', handleTag)
+		for _, channel in pairs(spell['channels']) do 
+			if type(channel) == 'number' then
+				SendChatMessage(msg, 'CHANNEL', nil, channel)
+			else 
+				SendChatMessage(msg, channel)
+			end				
+		end
 	end
-
-	SendChatMessage(msg, dest)
 end
 
-local addon = CreateFrame'Frame'
+local addon = CreateFrame('Frame')
 
 addon:SetScript('OnEvent', function(self, event, unit, spell)
 	if(unit == 'player') then
@@ -55,4 +58,4 @@ function addon:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell)
 	end
 end
 
-addon:RegisterEvent'UNIT_SPELLCAST_SUCCEEDED'
+addon:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED)'
